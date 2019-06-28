@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>scroller</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <style>
+    .x-scroller {
+      margin-top: 80px;
+      height: 600px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .x-scroller .container .item {
+      height: 50px;
+      line-height: 50px;
+      padding-left: 10px;
+    }
+
+    .x-scroller .container header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .x-scroller .container footer {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .x-scroller .container .item:nth-child(odd) {
+      background: #f7f7f7;
+    }
+
+    .x-scroller .container .item:nth-child(even) {
+      background: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <x-banner :is-load='isLoad' :list='list' v-on:load='generateList' v-on:refresh='refresh'></x-banner>
+  </div>
+  <script src="../js/vue.js"></script>
+  <script type="text/x-template" id="x-banner">
+    <div ref='scroller' class="x-scroller">
+      <div ref='container' class="container"  :style='ulstyle'>
+        <header v-if='refresh !== 1'>
+          <span v-if='refresh === 2'>下拉加载</span>
+          <span v-if='refresh === 3'>重新加载</span>
+        </header>
+        <div class="item" v-for="item in list" :key='item'>{{item}}</div>
+        <footer>
+          <span v-if='isLoad'>拼命加载中</span>
+          <span v-else>没有更多了</span>
+        </footer>
+      </div>
+    </div>
+  </script>
+  <script>
+    Vue.component('x-banner', {
+      template: "#x-banner",
+      props: {
+        isLoad: {
+          type: Boolean,
+          default: false
+        },
+        list: {
+          type: Array,
+          default: []
+        }
+      },
+      data() {
+        return {
+          refresh: 1,
+          touch: {},
+          position: {
+            x: 0,
+            y: 0
+          },
+          ulstyle: {
+            transition: 'none',
+            transform: 'translateY(0px)'
+          },
+        }
+      },
+      watch: {
+        list: function () {
+          this.$nextTick(() => {
+            if (this.position.y <= 0) {
+              this.getLoad()
+            } else {
+              this.getRefresh(true)
+            }
+          })
+        },
+        isLoad: function () {
+          this.getLoad()
+        },
+        'position.y': function (val, oldVal) {
+          this.ulstyle.transform = `translateY(${val}px)`
+        }
+      },
+      methods: {
+        getLoad() {
+          // 判断是否满足视觉上的上拉加载条件
+          let isLoad = this.$refs.scroller.clientHeight + Math.abs(this.position.y) > this.$refs.container.clientHeight
+          if (isLoad && this.isLoad) {
+            this.$emit('load')
+          }
+          // 数据加载完成，回弹到合适的位置
+          if (isLoad && !this.isLoad) {
+            // 回弹距离 = 容器高度 + 移动距离 - 内容高度
+            let move = this.$refs.scroller.clientHeight + Math.abs(this.position.y) - this.$refs.container.clientHeight
+            this.position.y += move
+            this.ulstyle.transition = `all 500ms ease 0s`
+          }
+        },
+        getRefresh(value) {
+          if (value) {
+            this.position.y = 0
+            this.ulstyle.transition = `all 500ms ease 0s`
+            this.refresh = 1
+            this.getLoad()
+          } else {
+            console.log('222')
+            this.refresh = 3
+            this.$emit('refresh')
+          }
+        },
+        touchstart(event) {
+          event.preventDefault()
+          this.ulstyle.transition = 'none'
+          this.touch = event.targetTouches[0]
+        },
+        touchmove(event) {
+          event.preventDefault()
+          let diffMove = Math.abs(this.position.y) + this.$refs.scroller.clientHeight - this.$refs.container.clientHeight
+          if (this.position.y > 0 && this.position.y < 20) this.refresh = 2
+          if (this.position.y > 20) this.refresh = 3
+          if (diffMove > 40) return
+          if (this.position.y > 40) return
+          this.position.y += event.targetTouches[0].pageY - this.touch.pageY
+          this.touch = event.targetTouches[0]
+        },
+        touchend(event) {
+          if (this.position.y <= 0) {
+            this.getLoad()
+          } else {
+            this.getRefresh()
+          }
+        },
+      },
+      mounted() {
+        this.$refs.scroller.addEventListener('touchstart', this.touchstart, false)
+        this.$refs.scroller.addEventListener('touchmove', this.touchmove, false)
+        this.$refs.scroller.addEventListener('touchend', this.touchend, false)
+        this.$nextTick(() => {
+          this.getLoad()
+        })
+      },
+      beforeDestory() {
+        this.$refs.scroller.removeEventListener('touchstart', this.touchstart, false)
+        this.$refs.scroller.removeEventListener('touchmove', this.touchmove, false)
+        this.$refs.scroller.removeEventListener('touchend', this.touchend, false)
+      },
+    })
+
+
+    let vue = new Vue({
+      el: '#app',
+      data: {
+        list: [],
+        num: 0,
+        isLoad: true
+      },
+      methods: {
+        generateList(value) {
+          setTimeout(() => {
+            if (value) this.list = []
+            if (this.list.length < 20) {
+              for (let i = 0; i < 10; i++) {
+                this.list.push(this.num++)
+              }
+            } else {
+              this.isLoad = false
+            }
+          }, 500)
+        },
+        refresh() {
+          this.num = 0
+          this.isLoad = true
+          this.generateList(1)
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>

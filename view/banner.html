@@ -69,7 +69,8 @@
     <h1>横向循环切换</h1>
     <x-banner :list='list' :loop='true' :point='true'></x-banner>
   </div>
-  <script src="../js/vue.js"></script>
+  <!-- <script src="../js/vue.js"></script> -->
+  <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
   <script type="text/x-template" id="x-banner">
     <div class="x-banner">
       <div ref="banner" class="container">
@@ -114,7 +115,7 @@
           num: 0,
           time: null,
           ulstyle: {
-            transition: 'all 2000s ease 0s',
+            transition: 'all 2s ease 0s',
             transform: 'translateX(0px)'
           },
           touch: {},

@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>首页</title>
   <link rel="stylesheet" href="style/style.css">
   <style>
@@ -11,11 +10,19 @@
       margin-top: 30px;
     }
     ul li {
-      text-align: center;
-      margin: 20px;
+      text-align: left;
+      border-top: 1px solid #d0c9c9;
+    }
+    ul li:last-child {
+      border-bottom: 1px solid #d0c9c9;
     }
     ul li a {
+      display: flex;
+      padding: 10px;
       font-size: 24px;
+    }
+    ul li a:hover {
+      background: #d0c9c9;
     }
   </style>
 </head>
@@ -32,7 +39,8 @@
       data: {
         list: [
           { src:'view/banner.html', name: 'banner'},
-          { src:'view/banner.html', name: 'load'}
+          { src:'view/scroller.html', name: 'scroller'},
+          { src:'view/search.html', name: 'search'}
         ]
       }
     })
