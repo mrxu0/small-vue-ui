@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>轮播图</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <style>
+    .x-banner {
+      width: 100%;
+      height: 200px;
+      position: relative;
+    }
+
+    .x-banner .container {
+      width: inherit;
+      height: inherit;
+      overflow: hidden;
+    }
+
+    .x-banner .container ul {
+      white-space: nowrap;
+      display: block;
+      height: inherit;
+      font-size: 0;
+    }
+
+    .x-banner .container ul li {
+      display: inline-block;
+      vertical-align: top;
+    }
+
+    .x-banner .container ul li img{
+      width: 100%;
+    }
+
+    /* 点 */
+    .x-banner .point {
+      position: absolute;
+      bottom: 10px;
+      transform: translateX(-50%);
+      left: 50%;
+    }
+    .x-banner .point span {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .x-banner .point .u-active {
+      border: 1px solid black;
+    }
+    .x-banner .point .active {
+      border: 1px solid black;
+      background: black;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <h1>横向无缝切换</h1>
+    <x-banner :list='list'></x-banner>
+    <h1>横向切换</h1>
+    <x-banner :list='list' :point='true'></x-banner>
+    <h1>横向循环切换</h1>
+    <x-banner :list='list' :loop='true' :point='true'></x-banner>
+  </div>
+  <script src="../js/vue.js"></script>
+  <script type="text/x-template" id="x-banner">
+    <div class="x-banner">
+      <div ref="banner" class="container">
+        <ul ref="ul" :style='ulstyle'>
+          <slot>
+              <li v-for="(item, index) in list" :key="index">
+                <img :src="item" alt="">
+              </li>
+          </slot>
+        </ul>
+      </div>
+      <div v-if='point' class="point">
+          <span v-for="(item, index) in list" :key="index" :class="{'u-active': num !== index, active: num === index}"></span>
+      </div>
+    </div>
+</script>
+  <script>
+    Vue.component('x-banner', {
+      template: "#x-banner",
+      props: {
+        list: {
+          type: Array,
+          default: []
+        },
+        loop: {
+          type: Boolean,
+          default: false
+        },
+        duration: {
+          type: Number,
+          default: 3000
+        },
+        point: {
+          type: Boolean,
+          default: false
+        }
+      },
+      data() {
+        return {
+          bannerWidth: 0,
+          ulX: 0, // 
+          num: 0,
+          time: null,
+          ulstyle: {
+            transition: 'all 2000s ease 0s',
+            transform: 'translateX(0px)'
+          },
+          touch: {},
+          move: 0
+        }
+      },
+      methods: {
+        touchstart(event) {
+          clearInterval(this.time)
+          this.touch = event.targetTouches[0]
+        },
+        touchmove(event) {
+          this.move = event.targetTouches[0].pageX - this.touch.pageX
+          this.ulstyle.transition = 'none'
+          this.ulstyle.transform = `translateX(${this.move - this.ulX}px)`
+        },
+        touchend(event) {
+          if (Math.abs(this.move) / this.bannerWidth > .1) {
+            if (this.move < 0 && this.num < this.list.length -1) {
+              this.num ++
+              this.ulX += this.bannerWidth
+            } 
+            if (this.move > 0 && this.num > 0) {
+              this.num --
+              this.ulX -= this.bannerWidth
+            }
+          }
+          this.ulstyle.transition = `all 0.5s ease 0s`
+          this.ulstyle.transform = `translateX(${-this.ulX}px)`
+        },
+        transitionend() {
+          this.loopStart()
+        },
+        loopStart() {
+          if (this.loop) {
+            this.time = setInterval(() => {
+              this.num++
+              if (this.num >= this.list.length) {
+                this.ulX = 0
+                this.num = 0
+              } else {
+                this.ulX += this.bannerWidth
+              }
+              this.ulstyle.transition = `all ${this.duration / 1000}s ease 0s`
+              this.ulstyle.transform = `translateX(${-this.ulX}px)`
+            }, this.duration)
+          }
+        }
+      },
+      mounted() {
+        this.$refs.banner.addEventListener('touchstart',this.touchstart, false)
+        this.$refs.banner.addEventListener('touchmove',this.touchmove, false)
+        this.$refs.banner.addEventListener('touchend',this.touchend, false)
+        this.$refs.ul.addEventListener('transitionend',this.transitionend, false)
+        this.$nextTick(() => {
+          this.bannerWidth = this.$refs.ul.clientWidth
+          this.loopStart()
+        })
+      },
+      beforeDestory() {
+        this.$refs.banner.removeEventListener('touchstart',this.touchstart, false)
+        this.$refs.banner.removeEventListener('touchmove',this.touchmove, false)
+        this.$refs.banner.removeEventListener('touchend',this.touchend, false)
+      }
+    })
+    var vue = new Vue({
+      el: "#app",
+      data: {
+        list: ['../img/1.jpg', '../img/2.png', '../img/3.jpg'],
+      },
+    })
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>首页</title>
+  <link rel="stylesheet" href="style/style.css">
+  <style>
+    ul {
+      margin-top: 30px;
+    }
+    ul li {
+      text-align: center;
+      margin: 20px;
+    }
+    ul li a {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <ul>
+      <li v-for='(item, index) in list' :key='index'><a :href="item.src">{{item.name}}</a></li>
+    </ul>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+  <script>
+    let vue = new Vue({
+      el: '#app',
+      data: {
+        list: [
+          { src:'view/banner.html', name: 'banner'},
+          { src:'view/banner.html', name: 'load'}
+        ]
+      }
+    })
+  </script>
+</body>
+</html>
