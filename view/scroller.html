@@ -7,9 +7,12 @@
   <title>scroller</title>
   <link rel="stylesheet" href="../style/style.css">
   <style>
+    body {
+      background: #f7f7f7;
+    }
+
     .x-scroller {
-      margin-top: 80px;
-      height: 600px;
+      height: 100vh;
       overflow: hidden;
       position: relative;
     }
@@ -21,12 +24,19 @@
     }
 
     .x-scroller .container header {
+      position: absolute;
+      top: -50px;
+      width: 100%;
+      height: 50px;
+      line-height: 50px;
       text-align: center;
-      margin-bottom: 10px;
     }
+
     .x-scroller .container footer {
+      height: 50px;
+      width: 100%;
+      line-height: 50px;
       text-align: center;
-      margin-top: 10px;
     }
 
     .x-scroller .container .item:nth-child(odd) {
@@ -36,25 +46,34 @@
     .x-scroller .container .item:nth-child(even) {
       background: white;
     }
+
+    .console {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      background: red;
+    }
   </style>
 </head>
 
 <body>
   <div id="app">
-    <x-banner :is-load='isLoad' :list='list' v-on:load='generateList' v-on:refresh='refresh'></x-banner>
+    <x-banner :is-loading='isLoading' :is-more='isMore' v-on:load='generateList' v-on:refresh='refresh' @touchstart.prevent @touchmove.prevent>
+      <div class="item" v-for="item in list" :key='item'>{{item}}</div>
+    </x-banner>
   </div>
   <script src="../js/vue.js"></script>
   <script type="text/x-template" id="x-banner">
     <div ref='scroller' class="x-scroller">
       <div ref='container' class="container"  :style='ulstyle'>
-        <header v-if='refresh !== 1'>
-          <span v-if='refresh === 2'>下拉加载</span>
-          <span v-if='refresh === 3'>重新加载</span>
+        <header>
+          <span v-if='!refresh'>下拉加载</span>
+          <span v-else>正在加载</span>
         </header>
-        <div class="item" v-for="item in list" :key='item'>{{item}}</div>
+        <slot></slot>
         <footer>
-          <span v-if='isLoad'>拼命加载中</span>
-          <span v-else>没有更多了</span>
+          <span v-if='isMore && !refresh'>拼命加载中</span>
+          <span v-if='!isMore'>没有更多了</span>
         </footer>
       </div>
     </div>
@@ -63,103 +82,100 @@
     Vue.component('x-banner', {
       template: "#x-banner",
       props: {
-        isLoad: {
+        isLoading: {
           type: Boolean,
           default: false
         },
-        list: {
-          type: Array,
-          default: []
+        isMore: {
+          type: Boolean,
+          default: false
         }
       },
       data() {
         return {
-          refresh: 1,
+          refresh: false,
           touch: {},
-          position: {
-            x: 0,
-            y: 0
-          },
+          translateY: 0,
           ulstyle: {
             transition: 'none',
             transform: 'translateY(0px)'
           },
+          smoothSpeed: 0
         }
       },
       watch: {
-        list: function () {
-          this.$nextTick(() => {
-            if (this.position.y <= 0) {
-              this.getLoad()
-            } else {
-              this.getRefresh(true)
-            }
-          })
-        },
-        isLoad: function () {
-          this.getLoad()
-        },
-        'position.y': function (val, oldVal) {
-          this.ulstyle.transform = `translateY(${val}px)`
+        'isLoading': function (val) {
+          if (this.translateY > 0 && !val) this.setMove(0, 'end')
         }
       },
       methods: {
+        setTransform(translateY, type) {
+          if (type === 'end') this.ulstyle.transition = `all 500ms ease 0s`
+          else this.ulstyle.transition = ''
+          this.ulstyle.transform = `translateY(${translateY}px)`
+        },
+        setMove(translateY, type) {
+          this.$nextTick(() => {
+            let h = this.$refs.scroller.clientHeight
+            let maxMove = -this.$refs.container.clientHeight + h
+            if (translateY > 50) translateY = 50
+            if (translateY < maxMove) translateY = maxMove
+            this.translateY = translateY
+            this.refresh = false
+            this.setTransform(translateY, type)
+          })
+        },
         getLoad() {
-          // 判断是否满足视觉上的上拉加载条件
-          let isLoad = this.$refs.scroller.clientHeight + Math.abs(this.position.y) > this.$refs.container.clientHeight
-          if (isLoad && this.isLoad) {
-            this.$emit('load')
-          }
-          // 数据加载完成，回弹到合适的位置
-          if (isLoad && !this.isLoad) {
-            // 回弹距离 = 容器高度 + 移动距离 - 内容高度
-            let move = this.$refs.scroller.clientHeight + Math.abs(this.position.y) - this.$refs.container.clientHeight
-            this.position.y += move
-            this.ulstyle.transition = `all 500ms ease 0s`
-          }
+          if (this.isMore) this.$emit('load')
         },
         getRefresh(value) {
-          if (value) {
-            this.position.y = 0
-            this.ulstyle.transition = `all 500ms ease 0s`
-            this.refresh = 1
-            this.getLoad()
-          } else {
-            console.log('222')
-            this.refresh = 3
-            this.$emit('refresh')
-          }
+          this.refresh = true
+          this.$emit('refresh')
         },
         touchstart(event) {
           event.preventDefault()
-          this.ulstyle.transition = 'none'
-          this.touch = event.targetTouches[0]
+          this.touch = event.changedTouches[0]
         },
         touchmove(event) {
           event.preventDefault()
-          let diffMove = Math.abs(this.position.y) + this.$refs.scroller.clientHeight - this.$refs.container.clientHeight
-          if (this.position.y > 0 && this.position.y < 20) this.refresh = 2
-          if (this.position.y > 20) this.refresh = 3
-          if (diffMove > 40) return
-          if (this.position.y > 40) return
-          this.position.y += event.targetTouches[0].pageY - this.touch.pageY
-          this.touch = event.targetTouches[0]
+          if (this.refresh) return
+          let pageY = event.changedTouches[0].pageY
+          this.setMove(this.translateY + pageY - this.touch.pageY)
+          this.smoothSpeed = (pageY - this.touch.pageY) * 30
+          this.touch = event.changedTouches[0]
+        },
+        isEmit() {
+          if (!this.isLoading) {
+            let h = this.$refs.scroller.clientHeight
+            let maxMove = -this.$refs.container.clientHeight + h + 20
+            if (this.translateY < maxMove) {
+              this.getLoad()
+            }
+            if (this.translateY > 20) {
+              this.getRefresh()
+            }
+          }
         },
         touchend(event) {
-          if (this.position.y <= 0) {
-            this.getLoad()
+          let move = this.translateY + this.smoothSpeed
+          if (Math.abs(this.smoothSpeed) > 100) {
+            if (this.translateY < 0) {
+              this.setMove(move > 20 ? 0 : move, 'end')
+            } else {
+              this.setMove(move, 'end')
+            }
           } else {
-            this.getRefresh()
+            return this.isEmit()
           }
+          setTimeout(() => {
+            this.isEmit()
+          }, 500);
         },
       },
       mounted() {
         this.$refs.scroller.addEventListener('touchstart', this.touchstart, false)
         this.$refs.scroller.addEventListener('touchmove', this.touchmove, false)
         this.$refs.scroller.addEventListener('touchend', this.touchend, false)
-        this.$nextTick(() => {
-          this.getLoad()
-        })
       },
       beforeDestory() {
         this.$refs.scroller.removeEventListener('touchstart', this.touchstart, false)
@@ -168,32 +184,37 @@
       },
     })
 
-
     let vue = new Vue({
       el: '#app',
       data: {
         list: [],
         num: 0,
-        isLoad: true
+        isLoading: false,
+        isMore: true
       },
       methods: {
-        generateList(value) {
+        generateList() {
+          this.isLoading = true
           setTimeout(() => {
-            if (value) this.list = []
-            if (this.list.length < 20) {
-              for (let i = 0; i < 10; i++) {
+            this.isLoading = false
+            if (this.list.length < 40) {
+              for (let i = 0; i < 20; i++) {
                 this.list.push(this.num++)
               }
             } else {
-              this.isLoad = false
+              this.isMore = false
             }
-          }, 500)
+          }, 5000)
         },
         refresh() {
           this.num = 0
-          this.isLoad = true
-          this.generateList(1)
-        }
+          this.isMore = true
+          this.list = []
+          this.generateList()
+        },
+      },
+      created() {
+        this.generateList()
       }
     })
   </script>
