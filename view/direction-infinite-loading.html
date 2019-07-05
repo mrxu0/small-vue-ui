@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>infinite-loading</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <style>
+     .item {
+      height: 50px;
+      line-height: 50px;
+      padding-left: 10px;
+    }
+     .item:nth-child(odd) {
+      background: #f7f7f7;
+    }
+     .item:nth-child(even) {
+      background: white;
+    }
+     .more {
+      height: 50px;
+      line-height: 50px;
+      width: 100%;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+      <div class="item" v-for='item in list' :key='item'>{{item}}</div>
+  </div>
+  <script src="../js/utils.js"></script>
+  <script src="../js/vue.js"></script>
+  <script>
+    let vue = new Vue({
+      el: '#app',
+      data: {
+        list: [],
+        num: 0,
+        isLoading: false,
+        isMore: true
+      },
+      methods: {
+        getList() {
+          this.isLoading = true
+          setTimeout(() => {
+            if (this.list.length > 60) {
+              this.isMore = false
+              return 
+            }
+            for (let i = 0; i < 20; i++) {
+              this.list.push(this.num++)
+            }
+            this.isLoading = false
+          }, 1000);
+        }
+      },
+      created() {
+        this.getList()
+      }
+    })
+  </script>
+</body>
+</html>

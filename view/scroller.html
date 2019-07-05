@@ -198,13 +198,13 @@
           setTimeout(() => {
             this.isLoading = false
             if (this.list.length < 40) {
-              for (let i = 0; i < 20; i++) {
+              for (let i = 0; i < 200; i++) {
                 this.list.push(this.num++)
               }
             } else {
               this.isMore = false
             }
-          }, 5000)
+          }, 500)
         },
         refresh() {
           this.num = 0
